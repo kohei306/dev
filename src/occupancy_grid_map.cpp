@@ -162,7 +162,7 @@ int main(int argc, char ** argv)
   double roll = 0.0;
 
   double dx = 0.0;
-  double dy = 5.0;
+  double dy = 0.0;
   double dz = 1.0;
 
   Eigen::Matrix3d RM = getRotationMatrix(yaw, pitch, roll);
@@ -188,10 +188,10 @@ int main(int argc, char ** argv)
   nav_msgs::OccupancyGrid occGridMap;
  // occGridMap.info.map_load_time = 0;
 
-  const double map_width = 200.0;
-  const double map_height = 200.0;
-  const double map_resolution = 1;
-  const int map_num_cells = (map_width/map_resolution) * (map_height/map_resolution);
+  const uint map_width = 20;
+  const uint map_height = 20;
+  const double map_resolution = 10;
+  const int map_num_cells = map_width * map_height;
 
   occGridMap.header.frame_id = "map";
   occGridMap.info.resolution = map_resolution;
@@ -200,15 +200,15 @@ int main(int argc, char ** argv)
 
   geometry_msgs::Pose map_orig;
   geometry_msgs::Point map_orig_point;
-  map_orig_point.x = -(map_width/occGridMap.info.resolution) * 0.5;
-  map_orig_point.y = -(map_height/occGridMap.info.resolution) * 0.5;
+  map_orig_point.x = -(static_cast<double>(map_width) * map_resolution) * 0.5;
+  map_orig_point.y = -(static_cast<double>(map_height) * map_resolution) * 0.5;
   map_orig_point.z = 0;
   map_orig.position = map_orig_point;
   occGridMap.info.origin = map_orig;
 
 
   occGridMap.data.resize(map_num_cells);
-
+  CLOG(INFO, "default") << "occGridMap.data.size()" << ": " << occGridMap.data.size() << std::endl;
   for (size_t idx = 0; idx < occGridMap.data.size(); idx++)
   {
      occGridMap.data[idx] = 0.0;
@@ -216,14 +216,13 @@ int main(int argc, char ** argv)
 
   for (size_t idx = 0; idx < points_in_cartesian.size(); idx++)
   {
-    uint numCells = occGridMap.info.width / occGridMap.info.resolution;
+    uint x_idx = static_cast<uint>((points_in_cartesian[idx](0) + (static_cast<double>(map_width) * map_resolution) / 2) / occGridMap.info.resolution);
+    uint y_idx = static_cast<uint>((points_in_cartesian[idx](1) + (static_cast<double>(map_height) * map_resolution) / 2) / occGridMap.info.resolution);
+   // uint z_idx = std::abs(points_in_cartesian[idx](2));
+   CLOG(INFO, "default") << "points_in_cartesian: " << points_in_cartesian[idx](0) << ", " << points_in_cartesian[idx](1);
+   CLOG(INFO, "default") <<  "x_idx: "<< x_idx << ", y_idx: " << y_idx << std::endl;
 
-    uint x_idx = points_in_cartesian[idx](0) + 100.0;
-    uint y_idx = points_in_cartesian[idx](1) + 100.0;
-    uint z_idx = std::abs(points_in_cartesian[idx](2));
-   CLOG(INFO, "default") <<  points_in_cartesian[idx](0) << ", " << points_in_cartesian[idx](1) << std::endl;
-
-   occGridMap.data[(x_idx/occGridMap.info.resolution) + (y_idx/occGridMap.info.resolution) * map_width ] = 100.0;
+   occGridMap.data[x_idx + (y_idx * map_width)] = 100.0;
    //CLOG(INFO, "default") << int(points_in_cartesian[idx](0)/occGridMap.info.resolution) << ", " << int((points_in_cartesian[idx](1)/occGridMap.info.resolution)) << "(" <<int((points_in_cartesian[idx](1)/occGridMap.info.resolution) * occGridMap.info.width) << ")"<< std::endl;
 
   }
